@@ -13,6 +13,9 @@ const int screenHeight = 450;
 float degree=0;
 float degree_sin=std::sin(degree);
 float degree_cos=std::cos(degree);
+float minZ = 1.0f;    // На этом расстоянии цвет 100% pixel_color
+float maxZ = 50.0f;   // На этом расстоянии цвет 100% WHITE
+const Color pixel_color = MAROON;
 
 struct CameraDegrees {
     float yaw=0;
@@ -26,12 +29,12 @@ struct CameraDegrees {
 
 CameraDegrees camera;
 
-Vector2 center_on_screen(Vector2 coords){
-    Vector2 v;
+Vector3 center_on_screen(Vector3 coords){
+    Vector3 v;
 
     v.x = (coords.x + 1) / 2 * screenWidth;
     v.y = (1 - (coords.y + 1) / 2) * screenHeight; 
-
+    v.z = coords.z;
     return v;
 };
 
@@ -60,12 +63,13 @@ Vector3 rotate_camera(Vector3 dot_coordinates, float yaw, float pitch){
 };
 
 
-Vector2 project(Vector3 initial_cords){
+Vector3 project(Vector3 initial_cords){
     /* x'=x/z */
-    Vector2 coordinates;
+    Vector3 coordinates;
     if (initial_cords.z <= 0.1f) initial_cords.z=0.1;
     coordinates.x = initial_cords.x/initial_cords.z;
     coordinates.y = initial_cords.y/initial_cords.z;
+    coordinates.z = initial_cords.z;
     return coordinates;
 }
 
@@ -184,14 +188,23 @@ int main(void)
             DrawText("move the cube edges with arrow keys", 10, 10, 20, DARKGRAY);
 
             for (int i = 0; i < initial_cords.size(); i++){
-                Vector2 coordinates = {center_on_screen(project(rotate_camera(rotate_cube(initial_cords[i],degree),camera.yaw,camera.pitch)))};
-                Vector2 ballPosition = {coordinates.x,coordinates.y};   
-                DrawPixelV(ballPosition, MAROON);
+                Vector3 coordinates = {center_on_screen(project(rotate_camera(rotate_cube(initial_cords[i],degree),camera.yaw,camera.pitch)))};
+                Vector2 ballPosition = {coordinates.x,coordinates.y};
+                float t = (coordinates.z - minZ)/ (maxZ-minZ);
+                if (t<0.0f) t=0.0f;
+                if (t>1.0f) t=1.0f;
+
+                unsigned char r= (unsigned char)(pixel_color.r+(RAYWHITE.r-pixel_color.r)*t);
+                unsigned char g= (unsigned char)(pixel_color.g+(RAYWHITE.g-pixel_color.g)*t);
+                unsigned char b= (unsigned char)(pixel_color.b+(RAYWHITE.b-pixel_color.b)*t);
+
+                Color finalColor={r,g,b,255};
+                DrawPixelV(ballPosition, finalColor);
 
 //                screen_positions[i]=coordinates;
             }  
 //            for (int i = 0; i < 12; i++){
-//                DrawLineEx(screen_positions[edges[i][0]],screen_positions[edges[i][1]],5,MAROON);
+//                DrawLineEx(screen_positions[edges[i][0]],screen_positions[edges[i][1]],5,pixel_color);
 //            }
             EndDrawing();
         //----------------------------------------------------------------------------------
